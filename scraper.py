@@ -19,6 +19,25 @@ HEADERS = {
     'Referer': 'https://www.pinterest.com/'
 }
 
+def upload_to_vercel_blob(local_path, remote_path):
+    token = os.environ.get('BLOB_READ_WRITE_TOKEN')
+    if not token:
+        # Fallback for local testing without Vercel Blob
+        return f"/api/download_local/{remote_path}"
+        
+    url = f"https://blob.vercel-storage.com/{remote_path}"
+    headers = {
+        "authorization": f"Bearer {token}",
+        "x-api-version": "7"
+    }
+    with open(local_path, "rb") as f:
+        response = requests.put(url, headers=headers, data=f)
+        
+    if response.status_code == 200:
+        return response.json()["url"]
+    else:
+        raise Exception(f"Failed to upload {remote_path} to Vercel Blob: {response.text}")
+
 def find_keys_in_dict(d, keys_to_find):
     results = {}
     if isinstance(d, dict):
@@ -228,13 +247,29 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
         
         num_images, num_slides = create_pinterest_ppt(keyword, downloaded_paths, pptx_filepath)
         
-        downloaded_filenames = [os.path.basename(p) for p in downloaded_paths]
+        yield json.dumps({'type': 'status', 'message': "Uploading presentation to Vercel Storage…"})
+        check_timeout()
+        
+        session_id = os.path.basename(session_dir)
+        
+        blob_image_urls = []
+        for local_path in downloaded_paths:
+            check_timeout()
+            filename = os.path.basename(local_path)
+            blob_url = upload_to_vercel_blob(local_path, f"{session_id}/{filename}")
+            blob_image_urls.append(blob_url)
+            
+        check_timeout()
+        blob_pptx_url = upload_to_vercel_blob(pptx_filepath, f"{session_id}/{pptx_filename}")
+        
         yield json.dumps({
             'type': 'complete',
             'filename': pptx_filename,
             'num_images': num_images,
             'num_slides': num_slides,
-            'images': downloaded_filenames
+            'images': blob_image_urls,
+            'download_url': blob_pptx_url,
+            'image_urls': blob_image_urls
         })
         
     except TimeoutError as te:
