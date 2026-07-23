@@ -145,21 +145,6 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
     
     driver = None
     try:
-        driver_path = ChromeDriverManager().install()
-        # If it resolves to the text notice file, find the real chromedriver binary
-        if os.path.basename(driver_path) != 'chromedriver':
-            parent_dir = os.path.dirname(driver_path)
-            possible_path = os.path.join(parent_dir, 'chromedriver')
-            if os.path.exists(possible_path):
-                driver_path = possible_path
-            else:
-                for root, dirs, files in os.walk(parent_dir):
-                    if 'chromedriver' in files:
-                        driver_path = os.path.join(root, 'chromedriver')
-                        break
-        # Add executable permission
-        try:
-            import stat
         driver = setup_driver()
         yield json.dumps({'type': 'status', 'message': "Chrome started successfully..."})
         
