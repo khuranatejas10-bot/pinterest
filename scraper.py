@@ -1,8 +1,13 @@
 import os
+# Force webdriver-manager and Selenium to use /tmp since Vercel filesystem is read-only
+os.environ['WDM_CACHE_DIR'] = '/tmp/.wdm'
+os.environ['WDM_LOCAL'] = '1'
+
 import re
 import time
 import json
 import urllib.parse
+
 import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
