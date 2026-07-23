@@ -123,7 +123,6 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--single-process") # Save RAM
     chrome_options.add_argument("--disable-dev-tools")
     chrome_options.add_argument("--no-zygote")
     chrome_options.add_argument(f"user-agent={HEADERS['User-Agent']}")
