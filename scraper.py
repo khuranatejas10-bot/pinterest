@@ -123,7 +123,25 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--single-process") # Save RAM
+    chrome_options.add_argument("--disable-dev-tools")
+    chrome_options.add_argument("--no-zygote")
     chrome_options.add_argument(f"user-agent={HEADERS['User-Agent']}")
+    
+    # Disable image loading in the browser to drastically reduce RAM usage
+    # The DOM will still contain the img src URLs which is all we need!
+    prefs = {
+        "profile.managed_default_content_settings.images": 2,
+        "profile.default_content_setting_values.notifications": 2,
+        "profile.managed_default_content_settings.stylesheets": 2,
+        "profile.managed_default_content_settings.cookies": 2,
+        "profile.managed_default_content_settings.javascript": 1,
+        "profile.managed_default_content_settings.plugins": 2,
+        "profile.managed_default_content_settings.popups": 2,
+        "profile.managed_default_content_settings.geolocation": 2,
+        "profile.managed_default_content_settings.media_stream": 2,
+    }
+    chrome_options.add_experimental_option("prefs", prefs)
     
     driver = None
     try:
