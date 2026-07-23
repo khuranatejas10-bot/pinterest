@@ -125,6 +125,7 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-dev-tools")
     chrome_options.add_argument("--no-zygote")
+    chrome_options.add_argument("--js-flags=--max-old-space-size=128")
     chrome_options.add_argument(f"user-agent={HEADERS['User-Agent']}")
     
     # Disable image loading in the browser to drastically reduce RAM usage
@@ -159,13 +160,8 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
         # Add executable permission
         try:
             import stat
-            st = os.stat(driver_path)
-            os.chmod(driver_path, st.st_mode | stat.S_IEXEC)
-        except Exception as chmod_err:
-            print(f"Error changing permissions for chromedriver: {chmod_err}")
-            
-        service = Service(driver_path)
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver = setup_driver()
+        yield json.dumps({'type': 'status', 'message': "Chrome started successfully..."})
         
         search_query = urllib.parse.quote_plus(keyword)
         search_url = f"https://www.pinterest.com/search/pins/?q={search_query}"
@@ -174,7 +170,8 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
             driver.get(search_url)
             time.sleep(3.0)
             pins_map = {}
-            for scroll_num in range(12):
+            # Reduce scrolling to 5 to save massive amounts of memory
+            for scroll_num in range(5):
                 check_timeout()
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 time.sleep(scroll_pause)
@@ -216,7 +213,8 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
         pin_engagements = {}
         candidate_pin_ids = pin_ids[:40] # Analyze top 40 candidate pins
         
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        # Reduce max_workers to 2 to prevent memory spikes from parallel requests
+        with ThreadPoolExecutor(max_workers=2) as executor:
             future_to_pin = {executor.submit(fetch_pin_engagement, pid): pid for pid in candidate_pin_ids}
             for future in as_completed(future_to_pin):
                 check_timeout()
