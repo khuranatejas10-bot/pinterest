@@ -16,4 +16,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Render injects the PORT environment variable. We run Gunicorn with 1 worker and 4 threads to support SSE.
-CMD gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 app:app
+CMD gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 --timeout 120 app:app
