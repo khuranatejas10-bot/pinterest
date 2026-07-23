@@ -145,7 +145,25 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
     
     driver = None
     try:
-        service = Service(ChromeDriverManager().install())
+        driver_path = ChromeDriverManager().install()
+        # webdriver-manager bug: sometimes it returns THIRD_PARTY_NOTICES instead of the binary
+        if os.path.basename(driver_path) != 'chromedriver':
+            parent_dir = os.path.dirname(driver_path)
+            possible_path = os.path.join(parent_dir, 'chromedriver')
+            if os.path.exists(possible_path):
+                driver_path = possible_path
+            else:
+                for root, dirs, files in os.walk(parent_dir):
+                    if 'chromedriver' in files:
+                        driver_path = os.path.join(root, 'chromedriver')
+                        break
+        
+        # Ensure it has execute permissions
+        import stat
+        st = os.stat(driver_path)
+        os.chmod(driver_path, st.st_mode | stat.S_IEXEC)
+        
+        service = Service(driver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         yield json.dumps({'type': 'status', 'message': "Chrome started successfully..."})
         
