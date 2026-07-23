@@ -145,7 +145,8 @@ def scrape_and_generate_generator(keyword, session_dir, hard_timeout=90.0):
     
     driver = None
     try:
-        driver = setup_driver()
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         yield json.dumps({'type': 'status', 'message': "Chrome started successfully..."})
         
         search_query = urllib.parse.quote_plus(keyword)
